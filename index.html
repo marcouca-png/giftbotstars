@@ -3,71 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini App Lobby</title>
-    <!-- Подключаем официальный скрипт Telegram -->
+    <title>Crypto Cases</title>
     <script src="https://telegram.org"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #1a1d21;
-            color: #ffffff;
-            text-align: center;
-            padding: 20px;
-            margin: 0;
+        body { font-family: Arial, sans-serif; background-color: #1a1d21; color: white; text-align: center; margin: 0; padding: 15px; }
+        .container { max-width: 400px; margin: 0 auto; background: #24292e; padding: 15px; border-radius: 12px; }
+        h1 { color: #0088cc; font-size: 22px; margin-bottom: 5px; }
+        .balance-info { background: #1f2428; padding: 8px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; color: #aaa; }
+        .balance-info span { color: #28a745; font-weight: bold; }
+        
+        /* Меню кейсов */
+        .cases-menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .case-card { background: #1f2428; padding: 10px; border-radius: 8px; border: 2px solid #3f4750; cursor: pointer; transition: 0.2s; }
+        .case-card:hover { border-color: #0088cc; }
+        .case-icon { font-size: 35px; margin-bottom: 5px; }
+        .case-name { font-size: 12px; font-weight: bold; }
+        .case-cost { font-size: 11px; color: #ffca28; margin-top: 3px; }
+
+        /* Окно рулетки */
+        #roulette-screen { display: none; margin-top: 15px; }
+        .roulette-viewport {
+            width: 160px; height: 160px; margin: 0 auto;
+            border: 4px solid #0088cc; border-radius: 12px;
+            position: relative; overflow: hidden; background: #111;
         }
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            background: #24292e;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        /* Линия указателя остановки по центру */
+        .pointer {
+            position: absolute; right: 0; top: 78px; left: 0; height: 4px;
+            background: #ff2a2a; z-index: 10; box-shadow: 0 0 8px #ff2a2a;
         }
-        h1 { color: #0088cc; font-size: 24px; }
-        .user-card { background: #1f2428; padding: 10px; border-radius: 8px; margin: 15px 0; font-size: 14px;}
+        .roulette-tape { position: absolute; top: 0; left: 0; width: 100%; transition: none; }
+        .slot-item {
+            width: 100%; height: 160px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; font-size: 50px; box-sizing: border-box;
+            border-bottom: 1px solid #222; background: #1a1d21;
+        }
+        .slot-text { font-size: 14px; color: #fff; margin-top: 5px; font-weight: bold; }
+
         button {
-            width: 100%; background-color: #0088cc; color: white; border: none;
-            padding: 12px; margin: 8px 0; border-radius: 8px; font-size: 16px;
-            font-weight: bold; cursor: pointer; transition: 0.2s;
+            width: 100%; background: #0088cc; color: white; border: none; padding: 12px;
+            border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px;
         }
-        button:hover { background-color: #0077b3; }
-        .btn-secondary { background-color: #28a745; }
-        .btn-secondary:hover { background-color: #218838; }
+        button:disabled { background: #555; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🎮 Игровое Лобби MVP</h1>
-    
-    <div class="user-card">
-        <p>Привет, <span id="username">Игрок</span>!</p>
-        <p>Ваш Telegram ID: <span id="userid">не определен</span></p>
+    <h1>📦 Открытие Кейсов</h1>
+    <div class="balance-info">Доступно ключей: <span id="key-count">1</span> 🔑</div>
+
+    <!-- 1. Экран выбора 3-х кейсов -->
+    <div id="menu-screen">
+        <div class="cases-menu">
+            <div class="case-card" onclick="selectCase('Бронзовый')">
+                <div class="case-icon">📦</div>
+                <div class="case-name">Бронза</div>
+                <div class="case-cost">1 Ключ</div>
+            </div>
+            <div class="case-card" onclick="selectCase('Серебряный')">
+                <div class="case-icon">🔷</div>
+                <div class="case-name">Серебро</div>
+                <div class="case-cost">1 Ключ</div>
+            </div>
+            <div class="case-card" onclick="selectCase('Золотой')">
+                <div class="case-icon">👑</div>
+                <div class="case-name">Золото</div>
+                <div class="case-cost">1 Ключ</div>
+            </div>
+        </div>
+        <p style="font-size: 12px; color: #888;">Купить ключи можно в чате бота по кнопке под полем ввода.</p>
     </div>
 
-    <button onclick="openCase()">🎰 Открыть Кейс</button>
-    <button class="btn-secondary" onclick="closeApp()">❌ Выйти из игры</button>
+    <!-- 2. Экран с крутилкой -->
+    <div id="roulette-screen">
+        <h3 id="current-case-title">Кейс: Бронзовый</h3>
+        <div class="roulette-viewport">
+            <div class="pointer"></div>
+            <div class="roulette-tape" id="tape"></div>
+        </div>
+        <button id="spin-btn" onclick="startSpinning()">🎰 Крутить рулетку</button>
+    </div>
 </div>
 
 <script>
-    // Инициализируем Telegram WebApp API
     const tg = window.Telegram.WebApp;
-    tg.expand(); // Расширяем приложение на весь экран телефона
+    tg.expand();
 
-    // Выводим имя и ID реального пользователя из Telegram
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        document.getElementById('username').innerText = tg.initDataUnsafe.user.first_name;
-        document.getElementById('userid').innerText = tg.initDataUnsafe.user.id;
+    let userKeys = 1; // Стартовый баланс ключей для демонстрации фронтенда
+    let selectedCaseName = "";
+    const slotHeight = 160; // Высота одного слота в пикселях
+    const totalSlots = 100; // Всего 100 слотов в ленте
+    let tapeItems = [];
+
+    // Выбор кейса в меню
+    function selectCase(name) {
+        selectedCaseName = name;
+        document.getElementById('current-case-title').innerText = `Кейс: ${name}`;
+        document.getElementById('menu-screen').style.display = 'none';
+        document.getElementById('roulette-screen').style.display = 'block';
+        buildTape();
     }
 
-    // Функция симуляции открытия кейса
-    function openCase() {
-        tg.showAlert("🎲 Запрос отправлен на бэкенд! (Здесь будет анимация рулетки)");
+    // Генерация ленты из 100 слотов (70 проигрышей, 30 выигрышей)
+    function buildTape() {
+        const tape = document.getElementById('tape');
+        tape.innerHTML = "";
+        tape.style.transition = "none";
+        tape.style.top = "0px";
+
+        // Создаем массив: 70 проигрышей (💩) и 30 выигрышей (🧸)
+        let pool = [];
+        for(let i=0; i<70; i++) pool.push({ win: false, icon: "💩", text: "Пусто" });
+        for(let i=0; i<30; i++) pool.push({ win: true, icon: "🧸", text: "Мишка 15⭐️" });
+
+        // Случайно перемешиваем массив (Рандомное расположение)
+        tapeItems = pool.sort(() => Math.random() - 0.5);
+
+        // Отрисовываем слоты в HTML
+        tapeItems.forEach(item => {
+            const slot = document.createElement('div');
+            slot.className = 'slot-item';
+            slot.innerHTML = `${item.icon}<div class="slot-text">${item.text}</div>`;
+            tape.appendChild(slot);
+        });
     }
 
-    // Функция закрытия приложения
-    function closeApp() {
-        tg.close();
+    // Запуск прокрутки
+    function startSpinning() {
+        if (userKeys < 1) {
+            tg.showAlert("❌ У вас нет ключей! Купите их в чате бота.");
+            return;
+        }
+
+        // Списываем визуально ключ
+        userKeys--;
+        document.getElementById('key-count').innerText = userKeys;
+        document.getElementById('spin-btn').disabled = true;
+
+        const tape = document.getElementById('tape');
+        
+        // Выбираем случайный финальный слот (куда приземлится стрелка) от 10 до 90, чтобы не задеть края ленты
+        const targetIndex = Math.floor(Math.random() * 80) + 10; 
+        const targetItem = tapeItems[targetIndex];
+
+        // Рассчитываем позицию смещения. Сверху вниз, поэтому уходим в отрицательный top
+        const finalTop = -(targetIndex * slotHeight);
+
+        // Запускаем плавную анимацию на 5 секунд
+        tape.style.transition = "top 5s cubic-bezier(0.1, 0.8, 0.1, 1)";
+        
+        // Маленький трюк: сначала резко дергаем ленту вверх, имитируя замах кручения
+        tape.style.top = "50px"; 
+
+        setTimeout(() => {
+            tape.style.top = `${finalTop}px`;
+        }, 100);
+
+        // Ждем 5 секунд до окончания анимации
+        setTimeout(() => {
+            if (targetItem.win) {
+                tg.showAlert("🎉 ВЫИГРЫШ! Бот отправляет вам подарок Медведя!");
+                // Отправляем бэкенду сигнал, что юзер выиграл (через Telegram Telegram WebApp Data)
+                tg.sendData(JSON.stringify({ action: "win_gift", case: selectedCaseName }));
+            } else {
+                tg.showAlert("😢 Проигрыш. Попробуйте еще раз!");
+            }
+            
+            // Возвращаем меню
+            document.getElementById('spin-btn').disabled = false;
+            document.getElementById('menu-screen').style.display = 'block';
+            document.getElementById('roulette-screen').style.display = 'none';
+        }, 5200);
     }
 </script>
 </body>
