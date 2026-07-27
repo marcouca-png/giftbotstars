@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini App Lobby</title>
+    <!-- Подключаем официальный скрипт Telegram -->
+    <script src="https://telegram.org"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1d21;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #24292e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        h1 { color: #0088cc; font-size: 24px; }
+        .user-card { background: #1f2428; padding: 10px; border-radius: 8px; margin: 15px 0; font-size: 14px;}
+        button {
+            width: 100%; background-color: #0088cc; color: white; border: none;
+            padding: 12px; margin: 8px 0; border-radius: 8px; font-size: 16px;
+            font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        button:hover { background-color: #0077b3; }
+        .btn-secondary { background-color: #28a745; }
+        .btn-secondary:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎮 Игровое Лобби MVP</h1>
+    
+    <div class="user-card">
+        <p>Привет, <span id="username">Игрок</span>!</p>
+        <p>Ваш Telegram ID: <span id="userid">не определен</span></p>
+    </div>
+
+    <button onclick="openCase()">🎰 Открыть Кейс</button>
+    <button class="btn-secondary" onclick="closeApp()">❌ Выйти из игры</button>
+</div>
+
+<script>
+    // Инициализируем Telegram WebApp API
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Расширяем приложение на весь экран телефона
+
+    // Выводим имя и ID реального пользователя из Telegram
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        document.getElementById('username').innerText = tg.initDataUnsafe.user.first_name;
+        document.getElementById('userid').innerText = tg.initDataUnsafe.user.id;
+    }
+
+    // Функция симуляции открытия кейса
+    function openCase() {
+        tg.showAlert("🎲 Запрос отправлен на бэкенд! (Здесь будет анимация рулетки)");
+    }
+
+    // Функция закрытия приложения
+    function closeApp() {
+        tg.close();
+    }
+</script>
+</body>
+</html>
